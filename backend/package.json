@@ -1,0 +1,44 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed:faqs": "node src/modules/chatbot/seedFAQs.js",
+    "setup:ollama": "node src/modules/chatbot/setup-ollama.js",
+    "setup:training": "node src/modules/chatbot/setup-training.js setup",
+    "training:config": "node src/modules/chatbot/setup-training.js config",
+    "training:diagnose": "node src/modules/chatbot/setup-training.js diagnose",
+    "training:cleanup": "node src/modules/chatbot/setup-training.js cleanup",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.0.1",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.3",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^6.9.17",
+    "ollama": "^0.5.16",
+    "puppeteer": "^24.15.0",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.0.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
