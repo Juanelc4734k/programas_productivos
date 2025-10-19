@@ -46,7 +46,7 @@ export const registerCampesino = async (req, res) => {
 
 export const registerFuncionario = async (req, res) => {
     try {
-        const { nombre, documento_identidad, correo, telefono, contrasena, codigo_empleado, dependencia } = req.body;
+        const { nombre, documento_identidad, correo, telefono, contrasena, dependencia } = req.body;
         
         // Log de debugging - datos recibidos
         console.log('=== DEBUG REGISTER FUNCIONARIO ===');
@@ -55,12 +55,12 @@ export const registerFuncionario = async (req, res) => {
             documento_identidad,
             correo,
             telefono,
-            codigo_empleado,
+            
             dependencia,
             contrasena: contrasena ? '[PRESENTE]' : '[AUSENTE]'
         });
         
-        if (!nombre || !documento_identidad || !correo || !telefono || !contrasena || !codigo_empleado || !dependencia) {
+        if (!nombre || !documento_identidad || !correo || !telefono || !contrasena || !dependencia) {
             console.log('Error: Campos faltantes');
             return res.status(400).json({ message: "Todos los campos son obligatorios" });
         }
@@ -116,7 +116,6 @@ export const registerFuncionario = async (req, res) => {
             documento_identidad,
             correo,
             telefono,
-            codigo_empleado,
             dependencia,
             tipo_usuario: 'funcionario',
             contrasena: hashedPassword,
@@ -130,7 +129,6 @@ export const registerFuncionario = async (req, res) => {
             nombre: savedUser.nombre,
             documento_identidad: savedUser.documento_identidad,
             correo: savedUser.correo,
-            codigo_empleado: savedUser.codigo_empleado,
             dependencia: savedUser.dependencia,
             tipo_usuario: savedUser.tipo_usuario,
             estado: savedUser.estado

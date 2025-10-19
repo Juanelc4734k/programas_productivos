@@ -81,10 +81,6 @@ export function Header() {
 
           {/* Información del usuario y acciones */}
           <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto justify-between sm:justify-end">
-            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-              <Users className="w-3 h-3 mr-1" />
-              {programs.reduce((total, program) => total + (program.inscritos?.length || 0), 0)} Beneficiarios
-            </Badge>
 
             <Button variant="ghost" size="sm">
               <Bell className="w-4 h-4" />

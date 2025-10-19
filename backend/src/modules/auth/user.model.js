@@ -55,12 +55,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
-    // Campos adicionales para funcionarios
-    codigo_empleado: {
-        type: String,
-        trim: true,
-        required: function() { return this.tipo_usuario === 'funcionario'; }
-    },
     dependencia: {
         type: String,
         trim: true,

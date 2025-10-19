@@ -321,10 +321,6 @@ export default function RegisterPage() {
                       <Label htmlFor="admin-document">Cédula de Ciudadanía *</Label>
                       <Input id="admin-document" name="admin-document" type="text" placeholder="87654321" required />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="admin-employee-id">Código de Empleado *</Label>
-                      <Input id="admin-employee-id" name="admin-employee-id" type="text" placeholder="EMP-2024-001" required />
-                    </div>
                   </div>
 
                   <div className="space-y-2">

@@ -77,13 +77,6 @@ export function MainDashboard() {
       color: "emerald",
     },
     {
-      title: "Beneficiarios",
-      value: programs.reduce((total, program) => total + (program.inscritos?.length || 0), 0) || 0,
-      change: "+156",
-      icon: Users,
-      color: "blue",
-    },
-    {
       title: "Trámites Pendientes",
       value: tramites.filter(tramite => tramite.estado === 'submitted' || tramite.estado === 'in_review').length || 0,
       change: "-5",
@@ -102,7 +95,7 @@ export function MainDashboard() {
   return (
     <div className="space-y-6">
       {/* Estadísticas generales */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {stats.map((stat, index) => {
           const IconComponent = stat.icon
           return (
