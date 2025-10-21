@@ -54,7 +54,7 @@ export default function MapComponent({ center, zoom, proyectos, onProjectSelect 
     <MapContainer
       center={center}
       zoom={zoom}
-      style={{ height: "400px", width: "100%" }}
+      style={{ height: "100%", width: "100%" }}
       className="rounded-lg"
     >
       <TileLayer

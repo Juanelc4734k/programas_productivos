@@ -1,15 +1,19 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, Users, FileText, Calendar, Coffee, Wheat, Eye, Upload, CheckCircle } from "lucide-react"
-import { fetchProgramsByCampesino } from "@/services/programs.service"
+import { fetchProgramsByCampesino, subirEvidencia, reportarAvance } from "@/services/programs.service"
 import { tramitesService } from "@/services/tramite.service"
-
+import { useToast } from "@/hooks/use-toast"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 
 export function MainDashboard() {
@@ -17,6 +21,123 @@ export function MainDashboard() {
   const [tramites, setTramites] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const token = localStorage.getItem('token');
+  const { toast } = useToast();
+
+  const [isEvidenceDialogOpen, setEvidenceDialogOpen] = useState(false);
+  const [isProgressDialogOpen, setProgressDialogOpen] = useState(false);
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
+
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const evidenceInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [progressDescripcion, setProgressDescripcion] = useState("");
+  const [progressPorcentaje, setProgressPorcentaje] = useState<number | "">("");
+  const [progressFecha, setProgressFecha] = useState<string>("");
+
+  const openEvidenceModal = (programId: string) => {
+        setSelectedProgramId(programId);
+        setEvidenceDialogOpen(true);
+    };
+
+    const openProgressModal = (programId: string) => {
+        setSelectedProgramId(programId);
+        setProgressDialogOpen(true);
+    };
+
+    const resetEvidenceState = () => {
+        setEvidenceFile(null);
+        setIsDragActive(false);
+    };
+
+    const resetProgressState = () => {
+        setProgressDescripcion("");
+        setProgressPorcentaje("");
+        setProgressFecha("");
+    };
+
+    const handleEvidenceSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        setEvidenceFile(file);
+    };
+
+    const handleEvidenceDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragActive(true);
+    };
+
+    const handleEvidenceDragLeave = () => {
+        setIsDragActive(false);
+    };
+
+    const handleEvidenceDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragActive(false);
+        const file = e.dataTransfer.files?.[0] || null;
+        setEvidenceFile(file);
+    };
+
+    const confirmUploadEvidence = async () => {
+        if (!selectedProgramId || !evidenceFile) {
+            toast({
+                title: "Archivo requerido",
+                description: "Selecciona un archivo antes de confirmar.",
+                variant: "destructive",
+            });
+            return;
+        }
+        try {
+            await subirEvidencia(selectedProgramId, evidenceFile);
+            toast({ title: "Evidencia subida", description: "Archivo guardado correctamente." });
+            setEvidenceDialogOpen(false);
+            resetEvidenceState();
+        } catch (error: any) {
+            toast({
+                title: "Error al subir evidencia",
+                description: error?.message || "Intente nuevamente.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const cancelUploadEvidence = () => {
+        setEvidenceDialogOpen(false);
+        resetEvidenceState();
+    };
+
+    const confirmReportProgress = async () => {
+        if (!selectedProgramId || progressPorcentaje === "" || Number(progressPorcentaje) < 0 || Number(progressPorcentaje) > 100) {
+            toast({
+                title: "Porcentaje inválido",
+                description: "Debe estar entre 0 y 100.",
+                variant: "destructive",
+            });
+            return;
+        }
+        try {
+            await reportarAvance(
+                selectedProgramId,
+                Number(progressPorcentaje),
+                progressDescripcion || undefined,
+                progressFecha || undefined
+            );
+            toast({ title: "Avance reportado", description: `Progreso actualizado a ${progressPorcentaje}%` });
+            setProgressDialogOpen(false);
+            resetProgressState();
+        } catch (error: any) {
+            toast({
+                title: "Error al reportar avance",
+                description: error?.message || "Intente nuevamente.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const cancelReportProgress = () => {
+        setProgressDialogOpen(false);
+        resetProgressState();
+    };
+
   let decodedToken = null;
 
   if (token) {
@@ -48,24 +169,9 @@ export function MainDashboard() {
       }
     };
 
-    const loadTramites = async () => {
-      try {
-        const data = await tramitesService.listarMisTramites();
-        if (Array.isArray(data) && data.length > 0) {
-          setTramites(data);
-          setErrorMessage(null); // Limpia el mensaje de error si hay trámites
-        } else {
-          setTramites([]);
-          setErrorMessage("No se encontraron trámites para este campesino"); // Establece el mensaje de error
-        } 
-      } catch (error) {
-        console.error("Error fetching tramites:", error);
-        setTramites([]);
-        setErrorMessage("Error al cargar los trámites"); // Mensaje de error genérico
-      }
-    }
+
     loadPrograms();
-    loadTramites();
+
   }, []);
 
   const stats = [
@@ -91,6 +197,8 @@ export function MainDashboard() {
       color: "purple",
     },
   ]
+
+
 
   return (
     <div className="space-y-6">
@@ -177,8 +285,8 @@ export function MainDashboard() {
                             </div>
   
                             <div>
-                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Beneficiarios</p>
-                              <p className="text-sm font-medium text-gray-900 mt-1">{program.cupos} familias</p>
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Cupos disponibles</p>
+                              <p className="text-sm font-medium text-gray-900 mt-1">{program.cupos}</p>
                             </div>
                           </div>
   
@@ -190,12 +298,20 @@ export function MainDashboard() {
                                 <span className="sm:hidden">Detalles</span>
                               </Button>
                             </Link>
-                            <Button size="sm" variant="outline" className="w-full sm:w-auto">
-                              <Upload className="w-4 h-4 mr-2" />
-                              <span className="hidden sm:inline">Subir evidencia</span>
-                              <span className="sm:hidden">Evidencia</span>
-                            </Button>
-                            <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                            <label htmlFor={`evidencia-${program._id}`} className="w-full sm:w-auto">
+                              <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => openEvidenceModal(program._id)}>
+                                <Upload className="w-4 h-4 mr-2" />
+                                <span className="hidden sm:inline">Subir evidencia</span>
+                                <span className="sm:hidden">Evidencia</span>
+                              </Button>
+                            </label>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full sm:w-auto"
+                              onClick={() => openProgressModal(program._id)}
+                            >
                               <CheckCircle className="w-4 h-4 mr-2" />
                               <span className="hidden sm:inline">Reportar avance</span>
                               <span className="sm:hidden">Avance</span>
@@ -210,6 +326,111 @@ export function MainDashboard() {
           </div>
         </CardContent>
       </Card>
+      {/* Modal: Subir evidencia */}
+            <Dialog open={isEvidenceDialogOpen} onOpenChange={setEvidenceDialogOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Subir evidencia</DialogTitle>
+                        <DialogDescription>Arrastra tu archivo o selecciónalo manualmente.</DialogDescription>
+                    </DialogHeader>
+
+                    <div
+                        className={`mt-4 border-2 border-dashed rounded-lg p-6 text-center transition-all ${
+                            isDragActive ? "border-emerald-500 bg-emerald-50" : "border-gray-300"
+                        }`}
+                        onDragOver={handleEvidenceDragOver}
+                        onDragEnter={handleEvidenceDragOver}
+                        onDragLeave={handleEvidenceDragLeave}
+                        onDrop={handleEvidenceDrop}
+                    >
+                        <p className="text-sm text-gray-700 mb-2">
+                            Arrastra y suelta el archivo aquí
+                        </p>
+                        <p className="text-xs text-gray-500 mb-4">Formatos permitidos: imágenes, PDF, Word</p>
+                        <Button
+                            variant="outline"
+                            onClick={() => evidenceInputRef.current?.click()}
+                            type="button"
+                        >
+                            Seleccionar archivo
+                        </Button>
+                        <input
+                            ref={evidenceInputRef}
+                            type="file"
+                            className="hidden"
+                            onChange={handleEvidenceSelect}
+                        />
+
+                        {evidenceFile && (
+                            <div className="mt-4 text-sm text-gray-800">
+                                Archivo seleccionado: <span className="font-medium">{evidenceFile.name}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter className="mt-6">
+                        <Button variant="outline" onClick={cancelUploadEvidence}>Cancelar</Button>
+                        <Button onClick={confirmUploadEvidence} disabled={!evidenceFile}>
+                            Confirmar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* Modal: Reportar avance */}
+            <Dialog open={isProgressDialogOpen} onOpenChange={setProgressDialogOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Reportar avance</DialogTitle>
+                        <DialogDescription>Completa los campos para actualizar el progreso.</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-4 py-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="descripcion">Descripción del progreso</Label>
+                            <Textarea
+                                id="descripcion"
+                                value={progressDescripcion}
+                                onChange={(e) => setProgressDescripcion(e.target.value)}
+                                placeholder="Describe el avance realizado"
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="porcentaje">Porcentaje completado</Label>
+                            <Input
+                                id="porcentaje"
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={progressPorcentaje}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setProgressPorcentaje(val === "" ? "" : Number(val));
+                                }}
+                                placeholder="0 - 100"
+                            />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="fecha">Fecha de actualización</Label>
+                            <Input
+                                id="fecha"
+                                type="date"
+                                value={progressFecha}
+                                onChange={(e) => setProgressFecha(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter className="mt-2">
+                        <Button variant="outline" onClick={cancelReportProgress}>Cancelar</Button>
+                        <Button onClick={confirmReportProgress} disabled={progressPorcentaje === ""}>
+                            Confirmar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
     </div>
+    
   );
 }

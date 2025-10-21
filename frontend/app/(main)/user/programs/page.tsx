@@ -247,22 +247,8 @@ export default function ProgramsPage() {
         ) : (
           <>
             {/* Estadísticas generales */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <Card className="bg-white border border-gray-200">
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mr-4">
-                      <Users className="w-6 h-6 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900">
-                      {programs.reduce((total, program) => total + (program.inscritos?.length || 0), 0)}
-                      </p>
-                      <p className="text-sm text-gray-600">Total Beneficiarios</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              
 
               <Card className="bg-white border border-gray-200">
                 <CardContent className="p-6">
@@ -294,23 +280,7 @@ export default function ProgramsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border border-gray-200">
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mr-4">
-                      <CheckCircle className="w-6 h-6 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900">
-                      {formatNumber(
-                        programs.reduce((total, program) => total + (program.presupuesto || 0), 0)
-                      )}
-                      </p>
-                      <p className="text-sm text-gray-600">Inversión Total</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            
             </div>
 
             {/* Lista de programas */}
@@ -336,10 +306,7 @@ export default function ProgramsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-gray-900">${formatNumber(program.presupuesto)}</p>
-                          <p className="text-sm text-gray-600">Presupuesto asignado</p>
-                        </div>
+
                       </div>
                     </CardHeader>
 
@@ -351,7 +318,7 @@ export default function ProgramsPage() {
                           <div className="space-y-2 text-sm">
                             <div className="flex items-center">
                               <Users className="w-4 h-4 text-gray-400 mr-2" />
-                              <span>{program.cupos} beneficiarios</span>
+                              <span>{program.cupos} cupos disponibles</span>
                             </div>
                             <div className="flex items-center">
                               <MapPin className="w-4 h-4 text-gray-400 mr-2" />

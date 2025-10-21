@@ -319,7 +319,7 @@ export default function CalendarioPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Estadísticas rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-white border border-gray-200">
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -350,21 +350,6 @@ export default function CalendarioPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border border-gray-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mr-4">
-                  <Users className="w-6 h-6 text-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {eventos.reduce((sum, e) => sum + e.participants, 0)}
-                  </p>
-                  <p className="text-sm text-gray-600">Participantes</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           <Card className="bg-white border border-gray-200">
             <CardContent className="p-6">
@@ -544,10 +529,7 @@ export default function CalendarioPage() {
                             <MapPin className="w-4 h-4 mr-2" />
                             <span className="truncate">{evento.location}</span>
                           </div>
-                          <div className="flex items-center">
-                            <Users className="w-4 h-4 mr-2" />
-                            {evento.participants}/{evento.maxParticipants} participantes
-                          </div>
+                        
                         </div>
 
                         <div className="flex items-center justify-between mt-4">

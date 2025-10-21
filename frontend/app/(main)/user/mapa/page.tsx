@@ -30,7 +30,7 @@ import dynamic from "next/dynamic"
 const MapComponent = dynamic(() => import("@/components/map-component"), { 
   ssr: false,
   loading: () => (
-    <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+    <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
       <p className="text-gray-500">Cargando mapa...</p>
     </div>
   )
@@ -42,7 +42,6 @@ const proyectos = [
     name: "Programa Café Sostenible",
     type: "cafe",
     status: "activo",
-    beneficiaries: 156,
     location: "Vereda El Progreso",
     coordinates: { lat: 5.8547, lng: -75.6794 },
     startDate: "2024-01-15",
@@ -59,7 +58,6 @@ const proyectos = [
     name: "Agricultura Familiar",
     type: "agricultura",
     status: "activo",
-    beneficiaries: 89,
     location: "Vereda La Esperanza",
     coordinates: { lat: 5.8647, lng: -75.6894 },
     startDate: "2024-03-01",
@@ -76,7 +74,6 @@ const proyectos = [
     name: "Ganadería Sostenible",
     type: "ganaderia",
     status: "activo",
-    beneficiaries: 67,
     location: "Vereda San José",
     coordinates: { lat: 5.8447, lng: -75.6694 },
     startDate: "2024-04-15",
@@ -110,7 +107,6 @@ const proyectos = [
     name: "Apicultura Comunitaria",
     type: "apicultura",
     status: "activo",
-    beneficiaries: 34,
     location: "Vereda Las Flores",
     coordinates: { lat: 5.8347, lng: -75.6994 },
     startDate: "2024-02-01",
@@ -231,7 +227,7 @@ export default function MapaPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-white border border-gray-200">
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -241,22 +237,6 @@ export default function MapaPage() {
                 <div>
                   <p className="text-2xl font-bold text-gray-900">{proyectos.length}</p>
                   <p className="text-sm text-gray-600">Proyectos Activos</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border border-gray-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                  <Users className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {proyectos.reduce((sum, p) => sum + p.beneficiaries, 0)}
-                  </p>
-                  <p className="text-sm text-gray-600">Beneficiarios</p>
                 </div>
               </div>
             </CardContent>
@@ -375,7 +355,6 @@ export default function MapaPage() {
                               <Badge className={getStatusColor(proyecto.status)} size="sm">
                                 {proyecto.status}
                               </Badge>
-                              <span className="text-xs text-gray-500">{proyecto.beneficiaries} beneficiarios</span>
                             </div>
                           </div>
                         </div>
@@ -446,10 +425,6 @@ export default function MapaPage() {
                               <div>
                                 <p className="font-medium text-gray-900">Ubicación</p>
                                 <p className="text-gray-600">{proyecto.location}</p>
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-900">Beneficiarios</p>
-                                <p className="text-gray-600">{proyecto.beneficiaries} personas</p>
                               </div>
                               <div>
                                 <p className="font-medium text-gray-900">Área</p>

@@ -381,17 +381,17 @@ export function SupportChat() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Button variant="outline" size="sm" className="h-8 sm:h-9 text-xs sm:text-sm">
                 <Phone className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Llamar</span>
+                <span className="hidden sm:inline">Llamar: 3117623422</span>
                 <span className="sm:hidden">Tel</span>
               </Button>
-              <Button variant="outline" size="sm" className="h-8 sm:h-9 text-xs sm:text-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 sm:h-9 text-xs sm:text-sm"
+                onClick={() => window.location.href = 'mailto:alcaldia@montebello-antioquia.gov.co'}
+              >
                 <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Email
-              </Button>
-              <Button variant="outline" size="sm" className="h-8 sm:h-9 text-xs sm:text-sm">
-                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Agendar</span>
-                <span className="sm:hidden">Cita</span>
               </Button>
             </div>
           </div>

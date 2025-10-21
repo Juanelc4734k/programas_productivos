@@ -25,6 +25,7 @@ app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 
+app.use('/uploads', express.static('uploads'));
 //Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

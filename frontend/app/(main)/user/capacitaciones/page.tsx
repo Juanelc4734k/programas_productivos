@@ -317,7 +317,7 @@ export default function CapacitacionesPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-white border border-gray-200">
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -327,22 +327,6 @@ export default function CapacitacionesPage() {
                 <div>
                   <p className="text-2xl font-bold text-gray-900">{capacitaciones.length}</p>
                   <p className="text-sm text-gray-600">Capacitaciones</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border border-gray-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                  <Users className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {capacitaciones.reduce((sum, cap) => sum + cap.enrolled, 0)}
-                  </p>
-                  <p className="text-sm text-gray-600">Inscritos</p>
                 </div>
               </div>
             </CardContent>

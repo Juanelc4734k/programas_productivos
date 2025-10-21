@@ -13,9 +13,12 @@ import {
     getProjectById,
     updateProject,
     deleteProject,
-    getBeneficiarios
+    getBeneficiarios,
+    uploadEvidenceProgram,
+    reportProgramProgress
 } from './programs.controller.js';
 import { protect, authorize } from '../../middlewares/auth.middleware.js'; // Assuming auth middleware is in a shared location
+import { upload } from '../../middlewares/multer.middleware.js'; // Import the upload middleware
 
 const router = express.Router();
 
@@ -47,6 +50,16 @@ router.post('/:programId/enroll/:userId', protect, addUserToProgram); // Add spe
 // DELETE /api/programs/:programId/unenroll/:userId - Unenroll a user from a program (Campesino for self, Funcionario for others)
 router.delete('/:programId/unenroll/:userId', protect, removeUserFromProgram); // Add specific authorization
 
+router.post('/:programId/evidencia',
+    protect,
+    upload.single('evidencia'),
+    uploadEvidenceProgram
+);
+
+router.post('/:programId/progreso',
+    protect,
+    reportProgramProgress
+);
 
 // --- Project Routes (nested under programs for clarity, e.g., /api/programs/:programId/projects) ---
 

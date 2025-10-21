@@ -196,7 +196,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="farmer-email">Correo Electrónico *</Label>
+                    <Label htmlFor="farmer-email">Correo Electrónico (opcional)</Label>
                     <Input id="farmer-email" name="farmer-email" type="email" placeholder="juan@correo.com" required />
                   </div>
 
@@ -308,11 +308,11 @@ export default function RegisterPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="admin-first-name">Nombres *</Label>
-                      <Input id="admin-first-name" type="text" placeholder="María Elena" required />
+                      <Input id="admin-first-name" name="admin-first-name" type="text" placeholder="María Elena" required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="admin-last-name">Apellidos *</Label>
-                      <Input id="admin-last-name" type="text" placeholder="García López" required />
+                      <Input id="admin-last-name" name="admin-last-name" type="text" placeholder="García López" required />
                     </div>
                   </div>
 

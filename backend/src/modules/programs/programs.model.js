@@ -17,6 +17,22 @@ const testimonioSchema = new mongoose.Schema({
     }
 });
 
+const evidenciaSchema = new mongoose.Schema({
+    filename: { type: String, required: true },
+    path: { type: String, required: true },
+    mimetype: { type: String },
+    size: { type: Number },
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    uploadedAt: { type: Date, default: Date.now }
+});
+
+const reporteAvanceSchema = new mongoose.Schema({
+    valor: { type: Number, min: 0, max: 100, required: true },
+    descripcion: { type: String, trim: true },
+    fecha: { type: Date, default: Date.now },
+    usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+});
+
 const programSchema = new mongoose.Schema({
     nombre: {
         type: String,
@@ -92,7 +108,9 @@ const programSchema = new mongoose.Schema({
         required: true,
         trim: true
     }],
-    testimonios: [testimonioSchema]
+    testimonios: [testimonioSchema],
+    evidencia: [evidenciaSchema],
+    reportesAvance: [reporteAvanceSchema]
 }, {
     timestamps: true
 });

@@ -316,7 +316,7 @@ export default function NoticiasPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-white border border-gray-200">
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -345,26 +345,6 @@ export default function NoticiasPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border border-gray-200">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-                  <Eye className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {(() => {
-                      const totalVistas = noticias.reduce((sum, n) => sum + n.vistas, 0);
-                      return totalVistas >= 1000 
-                        ? `${Math.round(totalVistas / 1000)}K`
-                        : totalVistas.toString();
-                    })()}
-                  </p>
-                  <p className="text-sm text-gray-600">Visualizaciones</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           <Card className="bg-white border border-gray-200">
             <CardContent className="p-6">
@@ -499,10 +479,6 @@ export default function NoticiasPage() {
                             <Clock className="w-3 h-3 mr-1" />
                             {noticia.metadatos?.tiempoLectura || 3} min lectura
                           </div>
-                          <div className="flex items-center">
-                            <Eye className="w-3 h-3 mr-1" />
-                            {noticia.vistas}
-                          </div>
                         </div>
 
                         <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-2">{noticia.titulo}</h3>
@@ -603,10 +579,6 @@ export default function NoticiasPage() {
                               <div className="flex items-center">
                                 <Clock className="w-3 h-3 mr-1" />
                                 {noticia.metadatos?.tiempoLectura || 3} min
-                              </div>
-                              <div className="flex items-center">
-                                <Eye className="w-3 h-3 mr-1" />
-                                {noticia.vistas}
                               </div>
                               <div className="flex items-center">
                                 <MapPin className="w-3 h-3 mr-1" />

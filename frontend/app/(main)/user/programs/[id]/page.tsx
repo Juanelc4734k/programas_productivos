@@ -34,7 +34,9 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { fetchProgramById } from "@/services/programs.service"
-import type { Program } from "@/types/programs"
+import { getUserById } from "@/services/user.service"
+import type { Program, User as ProgramUser } from "@/types/programs"
+
 
 // Datos por defecto para mostrar mientras carga
 const defaultProgramData = {
@@ -263,6 +265,19 @@ export default function ProgramaDetallePage() {
   const [programData, setProgramData] = useState<Program | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [responsableUser, setResponsableUser] = useState<ProgramUser | null>(null)
+
+  const normalizeId = (val: any): string | null => {
+    if (!val) return null
+    if (typeof val === "string") return val
+    if (typeof val === "object") {
+      if (typeof val._id === "string") return val._id
+      if (typeof val.$oid === "string") return val.$oid
+      const s = typeof val.toString === "function" ? val.toString() : ""
+      if (s && s !== "[object Object]") return s
+    }
+    return null
+  }
   
   useEffect(() => {
     const loadProgram = async () => {
@@ -272,6 +287,7 @@ export default function ProgramaDetallePage() {
         setLoading(true)
         setError(null)
         const program = await fetchProgramById(programId)
+        console.log('Program data:', program)
         setProgramData(program)
       } catch (err: any) {
         setError(err.message || 'Error al cargar el programa')
@@ -283,6 +299,76 @@ export default function ProgramaDetallePage() {
     
     loadProgram()
   }, [programId])
+
+  useEffect(() => {
+    if (!programData) {
+      setResponsableUser(null)
+      return
+    }
+
+    const ref: any = programData.responsable
+    const responsableId = normalizeId(ref)
+
+    let cancelled = false
+    const run = async () => {
+      try {
+        if (responsableId) {
+          // Caso ideal: responsable asignado en el programa
+          const adapted = await getUserById(responsableId)
+          if (!cancelled) setResponsableUser(adapted)
+          return
+        }
+
+        // Fallback: si responsable es null, intenta con el primer inscrito
+        const firstInscrito = Array.isArray(programData.inscritos) ? programData.inscritos[0] : null
+        const inscritoId = firstInscrito ? normalizeId(firstInscrito._id) : null
+
+        if (inscritoId) {
+          const adapted = await getUserById(inscritoId)
+          if (!cancelled) setResponsableUser(adapted)
+        } else {
+          if (!cancelled) setResponsableUser(null)
+        }
+      } catch (e) {
+        console.error("Error al obtener responsable:", e)
+        if (!cancelled) setResponsableUser(null)
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [programData]);
+
+  const handleShare = async () => {
+    try {
+      const url = typeof window !== "undefined" ? window.location.href : ""
+      const title = programData?.nombre ?? "Programa Productivo"
+      const text = programData?.descripcion ?? "Un programa productivo interesante"
+
+      if (navigator.share) {
+        await navigator.share({
+          url,
+          title,
+          text,
+        })
+      } else {
+        await navigator.clipboard.writeText(`${title}\n${text}\n${url}`)
+        alert("Enlace copiado al portapapeles")
+      }
+    } catch (error) {
+      console.error("Error al compartir:", error)
+      try {
+        const url = typeof window !== "undefined" ? window.location.href : ""
+        await navigator.clipboard.writeText(url)
+        alert("No se pudo compartir. Enlace copiado al portapapeles.")
+      } catch (error) {
+        console.error("Error al obtener URL:", error)
+        alert("No se pudo copiar el enlace. Por favor, copielo manualmente.")
+      }
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -375,7 +461,7 @@ export default function ProgramaDetallePage() {
             </div>
             <div className="flex items-center space-x-3">
               <Badge className="bg-emerald-100 text-emerald-800">{programData.estado}</Badge>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleShare}>
                 <Share2 className="w-4 h-4 mr-2" />
                 Compartir
               </Button>
@@ -409,12 +495,7 @@ export default function ProgramaDetallePage() {
                   <Progress value={programData.progreso} className="h-2" />
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <Users className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-gray-900">{programData.inscritos?.length || 0}</p>
-                    <p className="text-sm text-gray-600">Beneficiarios</p>
-                  </div>
+               <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                   <div className="text-center p-4 bg-gray-50 rounded-lg">
                     <MapPin className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-gray-900">{programData.cupos}</p>
@@ -425,11 +506,7 @@ export default function ProgramaDetallePage() {
                     <p className="text-2xl font-bold text-gray-900">{programData.ubicaciones?.length || 0}</p>
                     <p className="text-sm text-gray-600">Ubicaciones</p>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <DollarSign className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-gray-900">${(programData.presupuesto / 1000000).toFixed(0)}M</p>
-                    <p className="text-sm text-gray-600">Presupuesto</p>
-                  </div>
+
                 </div>
               </CardContent>
             </Card>
@@ -460,7 +537,7 @@ export default function ProgramaDetallePage() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Mail className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{programData.responsable?.email || 'No disponible'}</span>
+                      <span className="text-sm text-gray-600">{programData.responsable?.correo || 'No disponible'}</span>
                     </div>
                   </div>
 
@@ -682,7 +759,7 @@ export default function ProgramaDetallePage() {
 
           {/* Tab Resultados */}
           <TabsContent value="resultados">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+           <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
               <Card className="bg-white border border-gray-200">
                 <CardHeader>
                   <CardTitle className="text-lg">Progreso General</CardTitle>
@@ -706,8 +783,25 @@ export default function ProgramaDetallePage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-              <Card className="bg-white border border-gray-200">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Progreso</span>
+                      <span className="text-sm font-medium text-gray-900">{programData?.progreso || 0}%</span>
+                    </div>
+                    <Progress value={programData?.progreso || 0} className="h-2" />
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Inscritos</p>
+                        <p className="font-medium text-emerald-600">{programData?.inscritos?.length || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Cupos</p>
+                        <p className="font-medium text-blue-600">{programData?.cupos || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="bg-white border border-gray-200">
                 <CardHeader>
                   <CardTitle className="text-lg">Presupuesto</CardTitle>
                 </CardHeader>
@@ -721,8 +815,10 @@ export default function ProgramaDetallePage() {
                     </div>
                   </div>
                 </CardContent>
+
               </Card>
-            </div>
+              </div>
+
           </TabsContent>
 
           {/* Tab Testimonios */}

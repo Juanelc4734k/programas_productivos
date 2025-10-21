@@ -111,12 +111,19 @@ export const getBeneficiarios = async (req, res) => {
 export const getProgramById = async (req, res) => {
     try {
         const program = await Program.findById(req.params.id)
-            .populate('responsable', 'nombre correo tipo_usuario')
+            .populate('responsable', 'nombre correo telefono tipo_usuario') // Ensure responsable field is populated
             .populate('inscritos', 'nombre correo documento_identidad');
         if (!program) {
             return res.status(404).json({ message: 'Programa no encontrado' });
         }
-        res.status(200).json(program);
+
+        const data = program.toObject() ? program.toObject() : program;
+
+        if(!data.responsable && Array.isArray(data.inscritos) && data.inscritos.length > 0) {
+            data.responsable = data.inscritos[0];
+        }
+
+        res.status(200).json({ success: true, data });
     } catch (error) {
         console.error("Error getting program by ID:", error);
         if (error.kind === 'ObjectId') {
@@ -245,6 +252,78 @@ export const removeUserFromProgram = async (req, res) => {
         res.status(500).json({ message: 'Error al desinscribir al usuario del programa', error: error.message });
     }
 };
+
+export const uploadEvidenceProgram = async (req, res) => {
+    try {
+        const { programId } = req.params;
+        if (!req.file) {
+            return res.status(400).json({ message: 'No se ha proporcionado ningún archivo' });
+        }
+        const program = await Program.findById(programId);
+        if (!program) {
+            return res.status(404).json({ message: 'Programa no encontrado' });
+        }
+
+        const normalizedPath = req.file.path.replace(/\\/g, '/');
+        const uploadsIndex = normalizedPath.indexOf('/uploads');
+        const publicPath = uploadsIndex >= 0 ? normalizedPath.substring(uploadsIndex) : normalizedPath;
+
+        const evidenceItem = {
+            filename: req.file.originalname,
+            path: publicPath,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+            uploadedBy: req.user?._id,
+            uploadedAt: new Date()
+        };
+
+        if (!program.evidencia) program.evidencia = [];
+        program.evidencia.push(evidenceItem);
+        await program.save();
+
+        res.status(200).json({ message: 'Evidencia subida correctamente', evidencia: evidenceItem, programId: program._id });
+    } catch (error) {
+        console.error("Error uploading evidence:", error);
+        res.status(500).json({ message: 'Error al subir la evidencia', error: error.message });
+    }
+    // ... existing code ...
+}
+
+export const reportProgramProgress = async (req, res) => {
+    try {
+        const { programId } = req.params;
+        const { progreso, descripcion } = req.body;
+
+        const value = Number(progreso);
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+            return res.status(400).json({ message: 'El progreso debe estar entre 0 y 100' });
+        }
+
+        const program = await Program.findById(programId);
+        if (!program) {
+            return res.status(404).json({ message: 'Programa no encontrado' });
+        }
+
+        program.progreso = value;
+
+        if (descripcion) {
+            if (!program.reportesAvance) program.reportesAvance = [];
+            program.reportesAvance.push({
+                valor: value,
+                descripcion,
+                fecha: new Date(),
+                usuario: req.user?._id
+            });
+        }
+
+        await program.save();
+        res.status(200).json({ message: 'Progreso actualizado', progreso: program.progreso, programId: program._id });
+    } catch (error) {
+        console.error("Error reporting progress:", error);
+        res.status(500).json({ message: 'Error al reportar el avance', error: error.message });
+    }
+    // ... existing code ...
+}
 
 
 // --- Project Controllers (associated with a Program) ---

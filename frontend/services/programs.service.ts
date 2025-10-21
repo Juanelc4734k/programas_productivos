@@ -6,7 +6,7 @@ export async function fetchPrograms() {
     try {
       const response = await api.get(API_ENDPOINTS.programs.list);
       return Array.isArray(response.data.programs)
-        ? response.data.programs.map((program) => ({
+        ? response.data.programs.map((program: Program) => ({
             ...program,
             beneficios: program.beneficios || [],
             requisitos: program.requisitos || [],
@@ -17,7 +17,26 @@ export async function fetchPrograms() {
       console.error("Error fetching programs:", error);
       return [];
     }
-  }
+}
+
+export async function subirEvidencia(programId: string, file: File) {
+    const fd = new FormData();
+    fd.append('evidencia', file);
+    const { data } = await api.post(`/programas/${programId}/evidencia`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return data;
+}
+
+export async function reportarAvance(
+    programId: string,
+    progreso: number,
+    descripcion?: string,
+    fecha?: string
+) {
+    const { data } = await api.post(`/programas/${programId}/progreso`, { progreso, descripcion, fecha });
+    return data;
+}
 
 export async function fetchProgramsByCampesino(id: string) {
     try {
