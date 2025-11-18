@@ -97,3 +97,29 @@ export async function unenrollUserFromProgram(programId: string, userId: string)
         throw new Error(error.response?.data?.message || error.message || 'Error al desinscribirse del programa');
     }
 }
+
+export async function createProgram(payload: {
+  nombre: string
+  descripcion: string
+  categoria: string
+  fecha_inicio: string
+  fecha_fin: string
+  estado?: 'activo'|'finalizado'|'en espera'|'cancelado'
+  cupos: number
+  presupuesto: number
+  beneficios: string[]
+  requisitos: string[]
+  ubicaciones: string[]
+}): Promise<Program> {
+  const { data } = await api.post(API_ENDPOINTS.programs.create, payload)
+  return data
+}
+
+export async function updateProgram(id: string, payload: Partial<Program>): Promise<Program> {
+  const { data } = await api.put(`/programas/${id}`, payload)
+  return data
+}
+
+export async function deleteProgram(id: string): Promise<void> {
+  await api.delete(`/programas/${id}`)
+}

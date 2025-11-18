@@ -107,6 +107,8 @@ router.get('/health', (req, res) => {
   });
 });
 
+router.get('/system/health', adminController.getSystemHealth);
+
 /**
  * Rutas adicionales para análisis específicos
  */

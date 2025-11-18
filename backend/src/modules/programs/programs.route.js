@@ -14,6 +14,8 @@ import {
     updateProject,
     deleteProject,
     getBeneficiarios,
+    getBeneficiariosStats,
+    exportBeneficiarios,
     uploadEvidenceProgram,
     reportProgramProgress
 } from './programs.controller.js';
@@ -31,6 +33,8 @@ router.get('/', getAllPrograms); // Consider adding protect if only for logged-i
 
 // GET /api/programs/beneficiarios/:id - Get all beneficiarios of a program (Public or specific roles)
 router.get('/beneficiarios/:id', getBeneficiarios); // Consider adding protect
+router.get('/beneficiarios/:id/stats', getBeneficiariosStats);
+router.get('/beneficiarios/:id/export', exportBeneficiarios);
 
 // GET /api/programs/:id - Get a single program by ID (Public or specific roles)
 router.get('/:id', getProgramById); // Consider adding protect

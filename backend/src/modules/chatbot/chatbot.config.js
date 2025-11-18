@@ -100,7 +100,21 @@ export const QUICK_REPLIES = {
         "¿Cómo reporto el avance de mi proyecto?",
         "¿Dónde descargo mis certificados?",
         "¿Qué programas están disponibles?",
-        "¿Cómo actualizo mis datos personales?"
+        "¿Cómo actualizo mis datos personales?",
+        "¿Cómo solicito una visita para revisar los cultivos?",
+        "¿Qué proyectos hay en este momento en el municipio para campesinos?",
+        "¿Cómo participo de los mercados campesinos?",
+        "¿Cómo contacto a los funcionarios de la UMAGRO?",
+        "¿Cómo me puedo asociar en los grupos de productores?",
+        "¿Qué cultivos tienen asistencia técnica por parte de la UMAGRO?",
+        "¿Cuál es el horario de la UMAGRO?",
+        "¿Cómo participo de los programas de huertas?",
+        "¿Cómo hago para vender mis productos de la finca?",
+        "¿Cómo me inscribo para proyectos agrícolas?",
+        "¿Qué servicios ofrece la UMAGRO?",
+        "¿Cómo agendo una visita técnica con UMAGRO?",
+        "¿Cómo accedo a la asistencia técnica de UMAGRO?",
+        "¿Cómo me comunico con la UMAGRO (teléfono, correo)?"
     ],
     
     FUNCIONARIO: [
@@ -167,6 +181,18 @@ export const INTENT_PATTERNS = {
     CONTACTO: {
         keywords: ['contacto', 'teléfono', 'email', 'dirección', 'ubicación', 'oficina'],
         confidence: 0.8
+    },
+    UMAGRO_VISITA: {
+        keywords: ['umagro', 'visita técnica', 'agendar', 'agenda', 'programar visita', 'visita'],
+        confidence: 0.85
+    },
+    UMAGRO_ASISTENCIA: {
+        keywords: ['umagro', 'asistencia técnica', 'asistencia', 'técnica', 'soporte agrícola'],
+        confidence: 0.85
+    },
+    UMAGRO_CONTACTO: {
+        keywords: ['umagro', 'contacto', 'teléfono', 'correo', 'email', 'horario'],
+        confidence: 0.85
     }
 };
 
@@ -219,6 +245,22 @@ export const MONTEBELLO_CONTEXT = {
         email: 'alcaldia@montebello.gov.co',
         address: 'Calle Principal #123, Centro, Montebello, Antioquia',
         hours: 'Lunes a Viernes, 8:00 AM - 5:00 PM'
+    },
+    UMAGRO: {
+        name: 'Unidad Municipal de Asistencia Agropecuaria (UMAGRO)',
+        services: [
+            'Asistencia técnica en cultivos priorizados',
+            'Capacitaciones y transferencias tecnológicas',
+            'Diagnóstico de predios y planes de mejora',
+            'Acompañamiento a proyectos productivos',
+            'Orientación para certificación orgánica'
+        ],
+        contact: {
+            phone: '(604) 123-4567',
+            email: 'umagro@montebello.gov.co',
+            office: 'Secretaría de Desarrollo Rural, Alcaldía de Montebello',
+            hours: 'Lunes a Viernes, 8:00 AM - 5:00 PM'
+        }
     }
 };
 
@@ -227,7 +269,7 @@ export const SYSTEM_PROMPT = `Eres un asistente virtual de la Alcaldía de Monte
 
 CONTEXTO MUNICIPAL:
 - Municipio: Montebello, Antioquia, Colombia
-- Actividades principales: Agricultura (café, hortalizas, flores), ganadería menor, turismo rural
+- Actividades principales: Agricultura (café, hortalizas, flores), ganadería menor, turismo rural, UMAGRO
 - Población objetivo: Campesinos, funcionarios municipales y administradores
 
 PROGRAMAS DISPONIBLES:
@@ -237,14 +279,23 @@ PROGRAMAS DISPONIBLES:
 4. Programa de Certificación Orgánica (asesoría técnica, certificación)
 5. Programa de Turismo Rural (desarrollo turístico sostenible)
 
+UMAGRO (Unidad Municipal de Asistencia Agropecuaria):
+- Servicios: asistencia técnica, capacitaciones, diagnóstico de cultivos, acompañamiento a proyectos y orientación para certificación.
+- Contacto: umagro@montebello.gov.co, (604) 123-4567, Secretaría de Desarrollo Rural.
+- Agendamiento: las visitas técnicas se solicitan por canal telefónico o en la oficina de la Secretaría.
+
 INSTRUCCIONES:
-- Responde SOLO sobre temas relacionados con Montebello y sus programas municipales
+- Responde SOLO sobre temas relacionados con Montebello y sus programas municipales y UMAGRO
 - Si te preguntan sobre otros municipios o temas no relacionados, redirige amablemente hacia los servicios de Montebello
 - Mantén un tono profesional pero cercano y amigable
 - Proporciona información específica y práctica
 - Si no tienes información específica, sugiere contactar directamente con la alcaldía
 - Usa emojis ocasionalmente para hacer las respuestas más amigables
 - Responde en español colombiano
+
+UMAGRO:
+- Puedes responder preguntas específicas sobre UMAGRO: servicios, asistencia técnica, agendamientos, horarios y datos de contacto.
+- Prioriza instrucciones claras (cómo solicitar, dónde acudir, horarios y requisitos).
 
 CONTACTO:
 - Teléfono: (604) 123-4567

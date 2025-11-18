@@ -1,6 +1,7 @@
 "use client"
+import React from 'react'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,24 +45,34 @@ export default function BeneficiariesManagement({ programId, programName }: Bene
   const [error, setError] = useState<string | null>(null)
   const [selectedBeneficiary, setSelectedBeneficiary] = useState<BeneficiaryWithPrograms | null>(null)
   const [veredas, setVeredas] = useState<string[]>([])
+  const [searchInput, setSearchInput] = useState('')
+  const debounceRef = useRef<number | null>(null)
   
   // Filtros y paginación
   const [filters, setFilters] = useState<BeneficiariesFilters>({
     search: '',
     estado: 'todos',
-    vereda: '',
+    vereda: 'all',
     page: 1,
     limit: 10
   })
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
-  // Cargar datos iniciales
+  // Beneficiarios: depende de filtros y programa
   useEffect(() => {
     loadBeneficiaries()
-    loadStats()
-    loadVeredas()
   }, [programId, filters])
+
+  // Stats: solo depende del programa
+  useEffect(() => {
+    loadStats()
+  }, [programId])
+
+  // Veredas: depende del programa, con fallback interno
+  useEffect(() => {
+    loadVeredas()
+  }, [programId])
 
   const loadBeneficiaries = async () => {
     try {
@@ -95,14 +106,27 @@ export default function BeneficiariesManagement({ programId, programName }: Bene
   const loadVeredas = async () => {
     try {
       const veredasData = await beneficiariesService.getVeredas()
-      setVeredas(veredasData)
+      if (veredasData && veredasData.length > 0) {
+        setVeredas(veredasData)
+      } else {
+        const fromStats = stats ? Object.keys(stats.porVereda || {}) : []
+        const fromBeneficiaries = Array.from(new Set(beneficiaries.map(b => b.vereda).filter(Boolean))) as string[]
+        const combined = Array.from(new Set([...(fromStats || []), ...(fromBeneficiaries || [])])) as string[]
+        setVeredas(combined)
+      }
     } catch (err) {
       console.error('Error loading veredas:', err)
     }
   }
 
   const handleSearch = (value: string) => {
-    setFilters(prev => ({ ...prev, search: value, page: 1 }))
+    setSearchInput(value)
+    if (debounceRef.current) {
+      window.clearTimeout(debounceRef.current)
+    }
+    debounceRef.current = window.setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: value, page: 1 }))
+    }, 400)
   }
 
   const handleFilterChange = (key: keyof BeneficiariesFilters, value: string | number) => {
@@ -145,26 +169,7 @@ export default function BeneficiariesManagement({ programId, programName }: Bene
       : <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Inactivo</Badge>
   }
 
-  if (loading && beneficiaries.length === 0) {
-    return (
-      <Card className="bg-white border border-gray-200">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Users className="w-5 h-5 mr-2" />
-            Gestión de Beneficiarios
-          </CardTitle>
-          <CardDescription>Cargando beneficiarios...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
+  
 
   return (
     <Card className="bg-white border border-gray-200">
@@ -270,7 +275,7 @@ export default function BeneficiariesManagement({ programId, programName }: Bene
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Buscar por nombre, documento o correo..."
-                value={filters.search}
+                value={searchInput}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10"
               />
@@ -293,7 +298,7 @@ export default function BeneficiariesManagement({ programId, programName }: Bene
               <SelectValue placeholder="Vereda" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las veredas</SelectItem>
+              <SelectItem value="all">Todas las veredas</SelectItem>
               {veredas.map((vereda) => (
                 <SelectItem key={vereda} value={vereda}>{vereda}</SelectItem>
               ))}

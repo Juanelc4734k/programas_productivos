@@ -190,11 +190,11 @@ const generateParticipantsReport = async (participants, programaId = null) => {
     
     const participantData = {
       id: participant._id,
-      nombre: `${participant.nombres} ${participant.apellidos}`,
-      documento: participant.documento_identidad,
-      correo: participant.correo,
-      telefono: participant.telefono,
-      ubicacion: participant.ubicacion,
+      nombre: participant.nombre || `${participant.nombres || ''} ${participant.apellidos || ''}`.trim(),
+      documento: participant.documento_identidad || participant.documento || '',
+      correo: participant.correo || '',
+      telefono: participant.telefono || '',
+      ubicacion: participant.vereda || participant.ubicacion || 'Sin especificar',
       fechaRegistro: participant.createdAt,
       programas: {
         total: programs.length,

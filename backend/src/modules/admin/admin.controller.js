@@ -3,6 +3,9 @@ import Project from '../programs/projects.model.js';
 import User from '../auth/user.model.js';
 import * as adminService from './admin.service.js';
 import puppeteer from 'puppeteer';
+import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Generar reporte general de todos los programas
@@ -832,3 +835,26 @@ export {
   getProgramMetrics,
   getExecutiveSummary
 };
+
+export const getSystemHealth = async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = dbState === 1 ? 'healthy' : dbState === 2 ? 'warning' : 'error';
+    const uptimeSec = Math.round(process.uptime());
+    const uploadsPath = path.join(process.cwd(), 'uploads');
+    let fsStatus = 'healthy';
+    try { fs.accessSync(uploadsPath, fs.constants.R_OK | fs.constants.W_OK); }
+    catch { fsStatus = 'warning'; }
+
+    const now = new Date();
+    const components = [
+      { component: 'Base de Datos', status: dbStatus, uptime: `${uptimeSec}s`, lastCheck: now.toISOString() },
+      { component: 'Servidor Web', status: 'healthy', uptime: `${uptimeSec}s`, lastCheck: now.toISOString() },
+      { component: 'Sistema de Archivos', status: fsStatus, uptime: `${uptimeSec}s`, lastCheck: now.toISOString() },
+      { component: 'Notificaciones', status: 'warning', uptime: `${uptimeSec}s`, lastCheck: now.toISOString() }
+    ];
+    res.status(200).json({ success: true, data: components, generatedAt: now });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error obteniendo estado del sistema', error: error.message });
+  }
+}

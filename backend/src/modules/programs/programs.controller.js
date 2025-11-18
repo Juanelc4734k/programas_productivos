@@ -91,18 +91,198 @@ export const getAllPrograms = async (req, res) => {
 
 export const getBeneficiarios = async (req, res) => {
     try {
-        const program = await Program.findById(req.params.id)
-            .populate('inscritos', 'nombre correo documento_identidad tipo_usuario'); // Populate enrolled users with their details
-            
-        if (!program) {
-            return res.status(404).json({ message: 'Programa no encontrado' });
+        const { id } = req.params;
+        const { search, estado, vereda, page = 1, limit = 10 } = req.query;
+
+        let usersQuery;
+        if (id === 'all') {
+            usersQuery = User.find({ tipo_usuario: 'campesino' });
+        } else {
+            const program = await Program.findById(id);
+            if (!program) {
+                return res.status(404).json({ message: 'Programa no encontrado' });
+            }
+            usersQuery = User.find({ _id: { $in: program.inscritos } });
         }
 
-        // Return the populated inscritos array with user details
-        res.status(200).json(program.inscritos);
+        if (estado && (estado === 'activo' || estado === 'inactivo')) {
+            usersQuery = usersQuery.where({ estado });
+        }
+        if (vereda) {
+            usersQuery = usersQuery.where({ vereda });
+        }
+        if (search) {
+            const regex = new RegExp(search, 'i');
+            usersQuery = usersQuery.where({
+                $or: [
+                    { nombre: regex },
+                    { correo: regex },
+                    { documento_identidad: regex }
+                ]
+            });
+        }
+
+        const pageNum = Number(page) || 1;
+        const limitNum = Number(limit) || 10;
+        const skip = (pageNum - 1) * limitNum;
+
+        const total = await usersQuery.clone().countDocuments();
+        const rawUsers = await usersQuery.skip(skip).limit(limitNum).lean();
+
+        const beneficiaries = await Promise.all(
+            rawUsers.map(async (u) => {
+                const programas = await Program.find({ inscritos: u._id }).select('nombre estado createdAt').lean();
+                return {
+                    ...u,
+                    programas: programas.map(p => ({
+                        _id: p._id,
+                        nombre: p.nombre,
+                        estado: p.estado || 'activo',
+                        fecha_inscripcion: p.createdAt
+                    })),
+                    totalProgramas: programas.length
+                };
+            })
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Beneficiarios obtenidos correctamente',
+            data: {
+                beneficiaries,
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum)
+            }
+        });
     } catch (error) {
-        console.error("Error getting beneficiarios:", error);
+        console.error('Error getting beneficiarios:', error);
         res.status(500).json({ message: 'Error al obtener los beneficiarios', error: error.message });
+    }
+}
+
+export const getBeneficiariosStats = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estado, vereda } = req.query;
+
+        let usersQuery;
+        if (id === 'all') {
+            usersQuery = User.find({ tipo_usuario: 'campesino' });
+        } else {
+            const program = await Program.findById(id);
+            if (!program) {
+                return res.status(404).json({ message: 'Programa no encontrado' });
+            }
+            usersQuery = User.find({ _id: { $in: program.inscritos } });
+        }
+
+        if (estado && (estado === 'activo' || estado === 'inactivo')) {
+            usersQuery = usersQuery.where({ estado });
+        }
+        if (vereda) {
+            usersQuery = usersQuery.where({ vereda });
+        }
+
+        const users = await usersQuery.lean();
+
+        const total = users.length;
+        const activos = users.filter(u => u.estado === 'activo').length;
+        const inactivos = users.filter(u => u.estado === 'inactivo').length;
+        const porVereda = users.reduce((acc, u) => {
+            const v = u.vereda || 'Sin vereda';
+            acc[v] = (acc[v] || 0) + 1;
+            return acc;
+        }, {});
+        const porPrograma = {};
+
+        for (const u of users) {
+            const programas = await Program.find({ inscritos: u._id }).select('nombre').lean();
+            for (const p of programas) {
+                porPrograma[p.nombre] = (porPrograma[p.nombre] || 0) + 1;
+            }
+        }
+
+        res.status(200).json({ total, activos, inactivos, porVereda, porPrograma });
+    } catch (error) {
+        console.error('Error getting beneficiarios stats:', error);
+        res.status(500).json({ message: 'Error al obtener estadísticas', error: error.message });
+    }
+}
+
+export const exportBeneficiarios = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { search, estado, vereda, format = 'csv' } = req.query;
+
+        let usersQuery;
+        if (id === 'all') {
+            usersQuery = User.find({ tipo_usuario: 'campesino' });
+        } else {
+            const program = await Program.findById(id);
+            if (!program) {
+                return res.status(404).json({ message: 'Programa no encontrado' });
+            }
+            usersQuery = User.find({ _id: { $in: program.inscritos } });
+        }
+
+        if (estado && (estado === 'activo' || estado === 'inactivo')) {
+            usersQuery = usersQuery.where({ estado });
+        }
+        if (vereda) {
+            usersQuery = usersQuery.where({ vereda });
+        }
+        if (search) {
+            const regex = new RegExp(search, 'i');
+            usersQuery = usersQuery.where({
+                $or: [
+                    { nombre: regex },
+                    { correo: regex },
+                    { documento_identidad: regex }
+                ]
+            });
+        }
+
+        const users = await usersQuery.lean();
+
+        const header = ['nombre','documento_identidad','correo','telefono','vereda','estado','programas','totalProgramas','fecha_registro'];
+        const rows = [];
+        for (const u of users) {
+            const programas = await Program.find({ inscritos: u._id }).select('nombre');
+            const programaNombres = (programas || []).map(p => p.nombre).join('; ');
+            rows.push([
+                u.nombre || '',
+                u.documento_identidad || '',
+                u.correo || '',
+                u.telefono || '',
+                u.vereda || '',
+                u.estado || '',
+                programaNombres,
+                String(programas.length || 0),
+                (u.createdAt ? new Date(u.createdAt).toISOString() : '')
+            ]);
+        }
+
+        if (format !== 'csv') {
+            return res.status(400).json({ message: 'Formato no soportado' });
+        }
+
+        const escapeCell = (value) => {
+            const s = String(value ?? '');
+            const needsQuote = /[",\n]/.test(s);
+            const escaped = s.replace(/"/g, '""');
+            return needsQuote ? `"${escaped}"` : escaped;
+        };
+        const csvBody = [header.map(escapeCell).join(','), ...rows.map(r => r.map(escapeCell).join(','))].join('\n');
+        const bom = '\uFEFF';
+        const csv = bom + csvBody;
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="beneficiarios-${id}.csv"`);
+        return res.status(200).send(csv);
+    } catch (error) {
+        console.error('Error exporting beneficiarios:', error);
+        res.status(500).json({ message: 'Error al exportar beneficiarios', error: error.message });
     }
 }
 

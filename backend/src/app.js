@@ -14,6 +14,9 @@ import chatbotRoutes from './modules/chatbot/chatbot.routes.js'; // Importar rut
 import tramiteRoutes from './modules/digitalProcedures/tramite.routes.js'; // Importar rutas de trámites digitales
 import newsRoutes from './modules/news/news.routes.js'; // Importar rutas del módulo de noticias
 import adminRoutes from './modules/admin/admin.routes.js'; // Importar rutas del módulo de administración
+import reportsRoutes from './modules/reports/reports.routes.js';
+import eventsRoutes from './modules/events/events.routes.js';
+import activitiesRoutes from './modules/activities/activities.routes.js';
 
 dotenv.config();
 
@@ -34,6 +37,9 @@ app.use('/api/chatbot', chatbotRoutes); // Montar rutas del chatbot
 app.use('/api/tramites', tramiteRoutes); // Montar rutas de trámites digitales
 app.use('/api/news', newsRoutes); // Montar rutas del módulo de noticias
 app.use('/api/admin', adminRoutes); // Montar rutas del módulo de administración
+app.use('/api/reports', reportsRoutes);
+app.use('/api/events', eventsRoutes);
+app.use('/api/activities', activitiesRoutes);
 //app.use('/api/procedures', proceduresRoutes); // Montar rutas de trámites digitales
 //app.use('/api/trainings', trainingRoutes); // Montar rutas de capacitaciones
 //app.use('/api/geo', geoRoutes); // Montar rutas de georreferenciación

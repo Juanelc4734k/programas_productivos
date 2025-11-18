@@ -62,6 +62,21 @@ class ChatbotService {
             'tramites': {
                 keywords: ['trámites', 'procedimientos', 'documentos', 'requisitos'],
                 response: 'Trámites disponibles en línea:\n\n📋 **Solicitud de Insumos**\n📋 **Inscripción a Programas**\n📋 **Reporte de Avances**\n📋 **Solicitud de Certificados**\n📋 **Actualización de Datos**\n\nTodos los trámites se pueden realizar desde tu dashboard. ¿Necesitas ayuda con algún trámite específico?'
+            },
+            // UMAGRO: visita técnica
+            'umagro_visita': {
+                keywords: ['umagro', 'visita técnica', 'agendar', 'programar visita', 'visita'],
+                response: 'Para agendar una visita técnica con UMAGRO:\n\n1) Comunícate por 📞 (604) 123-4567 o 📧 umagro@montebello.gov.co\n2) Indica tu vereda, cultivo y disponibilidad de horario\n3) Un profesional de UMAGRO confirmará fecha y hora\n\nTambién puedes acercarte a la Secretaría de Desarrollo Rural (L–V, 8:00–17:00).'
+            },
+            // UMAGRO: asistencia técnica
+            'umagro_asistencia': {
+                keywords: ['umagro', 'asistencia técnica', 'asistencia', 'técnica', 'soporte agrícola'],
+                response: 'La asistencia técnica de UMAGRO incluye diagnóstico de cultivos, recomendaciones y seguimiento.\n\n¿Cómo acceder?\n• Solicita la asistencia por teléfono/email\n• Describe tu cultivo y la necesidad (plagas, nutrición, manejo)\n• Agenda visita o consulta en oficina\n\nContacto: umagro@montebello.gov.co – (604) 123-4567.'
+            },
+            // UMAGRO: contacto
+            'umagro_contacto': {
+                keywords: ['umagro', 'contacto', 'teléfono', 'correo', 'email', 'horario'],
+                response: 'Contacto UMAGRO:\n\n📞 Teléfono: (604) 123-4567\n📧 Email: umagro@montebello.gov.co\n🏢 Oficina: Secretaría de Desarrollo Rural, Alcaldía de Montebello\n🕒 Horario: L–V, 8:00 AM – 5:00 PM'
             }
         };
     }

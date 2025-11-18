@@ -1,5 +1,6 @@
 import api from '@/lib/api';
 import { API_ENDPOINTS } from '@/lib/config';
+import type { TramiteItem } from '@/types/tramites'
 
 
 export const tramitesService = {
@@ -80,5 +81,15 @@ export const tramitesService = {
       console.error(`Error fetching tramites for user ${id}:`, error);
       return [];
     }
-  }
+  },
+  listarPublicos: async (): Promise<TramiteItem[]> => {
+    try {
+      const response = await api.get(API_ENDPOINTS.tramites.list)
+      const list = Array.isArray(response.data) ? response.data : []
+      return list.map((t: any) => ({ ...t })) as TramiteItem[]
+    } catch (error) {
+      console.error("Error fetching public tramites:", error)
+      return []
+    }
+  },
 };

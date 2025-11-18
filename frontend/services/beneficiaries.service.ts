@@ -17,7 +17,7 @@ export const beneficiariesService = {
       
       if (filters?.search) params.append('search', filters.search);
       if (filters?.estado && filters.estado !== 'todos') params.append('estado', filters.estado);
-      if (filters?.vereda) params.append('vereda', filters.vereda);
+      if (filters?.vereda && filters.vereda !== 'all') params.append('vereda', filters.vereda);
       if (filters?.page) params.append('page', filters.page.toString());
       if (filters?.limit) params.append('limit', filters.limit.toString());
       
@@ -50,7 +50,7 @@ export const beneficiariesService = {
    */
   getBeneficiaryDetails: async (beneficiaryId: string): Promise<Beneficiary> => {
     try {
-      const response = await api.get(`/usuarios/${beneficiaryId}`);
+      const response = await api.get(`/users/${beneficiaryId}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching beneficiary details ${beneficiaryId}:`, error);
@@ -63,7 +63,7 @@ export const beneficiariesService = {
    */
   updateBeneficiaryStatus: async (beneficiaryId: string, estado: 'activo' | 'inactivo'): Promise<Beneficiary> => {
     try {
-      const response = await api.patch(`/usuarios/${beneficiaryId}/estado`, { estado });
+      const response = await api.put(`/users/${beneficiaryId}`);
       return response.data;
     } catch (error) {
       console.error(`Error updating beneficiary status ${beneficiaryId}:`, error);
@@ -76,8 +76,10 @@ export const beneficiariesService = {
    */
   getVeredas: async (): Promise<string[]> => {
     try {
-      const response = await api.get('/usuarios/veredas');
-      return response.data;
+      const response = await api.get('/users');
+      const users: Beneficiary[] = response.data || [];
+      const veredas = Array.from(new Set(users.map(u => (u as any).vereda).filter(Boolean)));
+      return veredas as string[];
     } catch (error) {
       console.error('Error fetching veredas:', error);
       return [];
