@@ -91,11 +91,23 @@ export const beneficiariesService = {
    */
   exportBeneficiaries: async (programId: string, format: 'csv' | 'excel' | 'pdf' = 'csv'): Promise<Blob> => {
     try {
-      const response = await api.get(`/programas/beneficiarios/${programId}/export`, {
-        params: { format },
-        responseType: 'blob'
+      const serverFormat = format === 'excel' ? 'xls' : format
+      const res = await api.get(`/programas/beneficiarios/${programId}/export`, {
+        params: { format: serverFormat },
+        responseType: 'blob',
+        headers: { Accept: 'application/pdf,text/csv,application/vnd.ms-excel' }
       });
-      return response.data;
+      const blob: Blob = res.data
+      if (blob && (blob.type === 'application/json' || blob.type === 'text/plain')) {
+        const text = await blob.text().catch(() => '')
+        try {
+          const obj = JSON.parse(text)
+          throw new Error(obj?.message || 'Error al exportar beneficiarios')
+        } catch {
+          throw new Error(text || 'Error al exportar beneficiarios')
+        }
+      }
+      return blob;
     } catch (error) {
       console.error(`Error exporting beneficiaries for program ${programId}:`, error);
       throw error;

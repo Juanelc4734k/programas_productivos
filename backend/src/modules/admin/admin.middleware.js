@@ -27,7 +27,7 @@ const verifyFuncionarioAccess = async (req, res, next) => {
     }
 
     // Verificar que el usuario sea funcionario o administrador
-    if (user.tipo_usuario !== 'funcionario' && user.tipo_usuario !== 'administrador') {
+    if (user.tipo_usuario !== 'funcionario' && user.tipo_usuario !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Acceso denegado. Se requieren permisos de funcionario o administrador'

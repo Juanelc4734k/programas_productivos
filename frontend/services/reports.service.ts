@@ -23,7 +23,21 @@ export const reportsService = {
   },
   export: async (params: ReportParams & { format: 'csv' | 'xls' | 'pdf' }): Promise<Blob> => {
     const { from, to, programId, search, format } = params
-    const { data } = await api.get('/reports/export', { params: { type: params.type, from, to, programId, search, format }, responseType: 'blob' })
-    return data
+    const res = await api.get('/reports/export', {
+      params: { type: params.type, from, to, programId, search, format },
+      responseType: 'blob',
+      headers: { Accept: 'application/pdf,text/csv,application/vnd.ms-excel' }
+    })
+    const blob: Blob = res.data
+    if (blob && (blob.type === 'application/json' || blob.type === 'text/plain')) {
+      const text = await blob.text().catch(() => '')
+      try {
+        const obj = JSON.parse(text)
+        throw new Error(obj?.message || 'Error al exportar reporte')
+      } catch {
+        throw new Error(text || 'Error al exportar reporte')
+      }
+    }
+    return blob
   }
 }

@@ -1,5 +1,8 @@
 import Program from '../programs/programs.model.js'
 import Tramite from '../digitalProcedures/tramite.model.js'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
 
 export const overviewReport = async (req, res) => {
   try {
@@ -62,12 +65,39 @@ export const exportReport = async (req, res) => {
       try {
         const html = `<!doctype html><html><head><meta charset="utf-8"><title>Reporte</title><style>body{font-family:sans-serif}h1{font-size:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #333;padding:6px;text-align:left}</style></head><body><h1>Reporte ${type}</h1><table><tr><th>Beneficiarios asignados</th><th>Programas activos</th><th>Trámites pendientes</th><th>Desde</th><th>Hasta</th></tr><tr><td>${dataResponse.beneficiariesAssigned}</td><td>${dataResponse.activePrograms}</td><td>${dataResponse.pendingProcedures}</td><td>${dataResponse.dateRange.from || ''}</td><td>${dataResponse.dateRange.to || ''}</td></tr></table></body></html>`
         const puppeteer = await import('puppeteer')
-        const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox','--disable-setuid-sandbox','--disable-gpu'] })
+
+        const commonWindowsPaths = [
+          'C:/Program Files/Google/Chrome/Application/chrome.exe',
+          'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+          path.join(process.env.LOCALAPPDATA || 'C:/Users', 'Google/Chrome/Application/chrome.exe')
+        ]
+        const envPath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH
+        let resolvedPath = envPath && fs.existsSync(envPath) ? envPath : commonWindowsPaths.find(p => { try { return fs.existsSync(p) } catch { return false } })
+        if (!resolvedPath) {
+          try {
+            const home = os.userInfo().homedir
+            const cacheRoot = path.join(home, '.cache', 'puppeteer', 'chrome')
+            const platforms = fs.existsSync(cacheRoot) ? fs.readdirSync(cacheRoot) : []
+            for (const plat of platforms) {
+              const candidate = path.join(cacheRoot, plat, 'chrome-win64', 'chrome.exe')
+              if (fs.existsSync(candidate)) { resolvedPath = candidate; break }
+            }
+          } catch {}
+        }
+
+        let browser
+        try {
+          browser = await puppeteer.launch({ headless: true, channel: 'chrome', args: ['--no-sandbox','--disable-setuid-sandbox','--disable-gpu'] })
+        } catch {
+          if (!resolvedPath) throw new Error('Chrome no encontrado. Configura CHROME_PATH o instala Chrome.')
+          browser = await puppeteer.launch({ headless: true, executablePath: resolvedPath, args: ['--no-sandbox','--disable-setuid-sandbox','--disable-gpu'] })
+        }
         const page = await browser.newPage()
         await page.setContent(html, { waitUntil: 'networkidle0' })
         const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true })
         await browser.close()
         res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Length', String(pdfBuffer.length))
         res.setHeader('Content-Disposition', `attachment; filename="reporte-${type}.pdf"`)
         return res.status(200).send(pdfBuffer)
       } catch (e) {

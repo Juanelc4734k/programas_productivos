@@ -245,6 +245,51 @@ export const loginFuncionario = async (req, res) => {
     }
 }
 
+export const loginAdmin = async (req, res) => {
+    try {
+        const { correo, documento_identidad, contrasena } = req.body;
+        if ((!correo && !documento_identidad) || !contrasena) {
+            return res.status(400).json({ message: "Debe proporcionar correo o documento de identidad, y contraseña" });
+        }
+
+        const user = await userModel.findOne({
+            $or: [
+                { documento_identidad },
+                { correo }
+            ]
+        })
+
+        if (!user) {
+            return res.status(400).json({ message: "El usuario no existe" });
+        }
+
+        if (user.tipo_usuario !== 'admin') {
+            return res.status(400).json({ message: "El usuario no es un administrador" });
+        }
+
+        if (user.estado !== 'activo') {
+            return res.status(400).json({ message: "El usuario no esta activo" });
+        }
+
+        const isMatch = await bcryptjs.compare(contrasena, user.contrasena);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Contraseña incorrecta" });
+        }
+
+        const token = jwt.sign({
+            id: user._id,
+            tipo_usuario: user.tipo_usuario
+        }, process.env.JWT_SECRET, { expiresIn: '1d' });
+
+        return res.status(200).json({
+            message: "Usuario administrador logueado correctamente",
+            token
+        })
+    } catch (error) {
+        return res.status(500).json({ message: "Error al loguear el administrador" });
+    }
+}
+
 export const me = async (req, res) => {
     try {
         const user = await userModel.findById(req.user.id);

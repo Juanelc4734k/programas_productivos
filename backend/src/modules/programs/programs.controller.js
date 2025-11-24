@@ -214,7 +214,8 @@ export const getBeneficiariosStats = async (req, res) => {
 export const exportBeneficiarios = async (req, res) => {
     try {
         const { id } = req.params;
-        const { search, estado, vereda, format = 'csv' } = req.query;
+        const { search, estado, vereda } = req.query;
+        const format = (req.query.format || 'csv').toString().toLowerCase();
 
         let usersQuery;
         if (id === 'all') {
@@ -264,10 +265,7 @@ export const exportBeneficiarios = async (req, res) => {
             ]);
         }
 
-        if (format !== 'csv') {
-            return res.status(400).json({ message: 'Formato no soportado' });
-        }
-
+        // Generate CSV content (base for CSV/XLS)
         const escapeCell = (value) => {
             const s = String(value ?? '');
             const needsQuote = /[",\n]/.test(s);
@@ -277,9 +275,73 @@ export const exportBeneficiarios = async (req, res) => {
         const csvBody = [header.map(escapeCell).join(','), ...rows.map(r => r.map(escapeCell).join(','))].join('\n');
         const bom = '\uFEFF';
         const csv = bom + csvBody;
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="beneficiarios-${id}.csv"`);
-        return res.status(200).send(csv);
+
+        if (format === 'csv' || format === 'xls' || format === 'excel') {
+            const isXls = format === 'xls' || format === 'excel';
+            res.setHeader('Content-Type', isXls ? 'application/vnd.ms-excel; charset=utf-8' : 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="beneficiarios-${id}.${isXls ? 'xls' : 'csv'}"`);
+            return res.status(200).send(csv);
+        }
+
+        if (format === 'pdf') {
+            // Render a simple HTML table and convert to PDF using puppeteer
+            const tableRows = rows.map(r => `<tr>${r.map(c => `<td style="padding:4px;border:1px solid #ddd;font-size:12px">${String(c)}</td>`).join('')}</tr>`).join('');
+            const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Beneficiarios</title>
+              <style>body{font-family:Arial,Helvetica,sans-serif;padding:16px;color:#111}
+              h1{font-size:16px;margin:0 0 12px}
+              table{border-collapse:collapse;width:100%}
+              thead th{background:#f5f5f5;border:1px solid #ddd;padding:6px;font-size:12px;text-align:left}
+              </style></head><body>
+              <h1>Beneficiarios - Programa ${id}</h1>
+              <table><thead><tr>${header.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table>
+              </body></html>`;
+
+            try {
+                const puppeteer = await import('puppeteer');
+                const commonWindowsPaths = [
+                  'C:/Program Files/Google/Chrome/Application/chrome.exe',
+                  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+                  (process.env.LOCALAPPDATA ? `${process.env.LOCALAPPDATA}/Google/Chrome/Application/chrome.exe` : '')
+                ].filter(Boolean);
+                const { default: fs } = await import('fs');
+                const os = await import('os');
+                const path = await import('path');
+                const envPath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH;
+                let resolvedPath = envPath && fs.existsSync(envPath) ? envPath : commonWindowsPaths.find(p => { try { return fs.existsSync(p) } catch { return false } });
+                if (!resolvedPath) {
+                  try {
+                    const home = (os.userInfo && os.userInfo().homedir) || process.env.USERPROFILE || '';
+                    const cacheRoot = path.join(home, '.cache', 'puppeteer', 'chrome');
+                    const platforms = fs.existsSync(cacheRoot) ? fs.readdirSync(cacheRoot) : [];
+                    for (const plat of platforms) {
+                      const candidate = path.join(cacheRoot, plat, 'chrome-win64', 'chrome.exe');
+                      if (fs.existsSync(candidate)) { resolvedPath = candidate; break; }
+                    }
+                  } catch {}
+                }
+
+                let browser;
+                try {
+                  browser = await puppeteer.launch({ headless: true, channel: 'chrome', args: ['--no-sandbox','--disable-setuid-sandbox','--disable-gpu'] });
+                } catch {
+                  if (!resolvedPath) throw new Error('Chrome no encontrado. Configura CHROME_PATH o instala Chrome.');
+                  browser = await puppeteer.launch({ headless: true, executablePath: resolvedPath, args: ['--no-sandbox','--disable-setuid-sandbox','--disable-gpu'] });
+                }
+                const page = await browser.newPage();
+                await page.setContent(html, { waitUntil: 'networkidle0' });
+                const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '20mm', right: '12mm', bottom: '20mm', left: '12mm' } });
+                await browser.close();
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Length', String(pdfBuffer.length));
+                res.setHeader('Content-Disposition', `attachment; filename=\"beneficiarios-${id}.pdf\"`);
+                return res.status(200).send(pdfBuffer);
+            } catch (err) {
+                console.error('Error generating PDF for beneficiarios:', err);
+                return res.status(500).json({ message: 'Error al generar PDF de beneficiarios' });
+            }
+        }
+
+        return res.status(400).json({ message: 'Formato no soportado' });
     } catch (error) {
         console.error('Error exporting beneficiarios:', error);
         res.status(500).json({ message: 'Error al exportar beneficiarios', error: error.message });

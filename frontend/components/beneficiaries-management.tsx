@@ -153,7 +153,8 @@ export default function BeneficiariesManagement({ programId, programName }: Bene
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `beneficiarios-${programName || programId}.${format}`
+      const ext = format === 'excel' ? 'xls' : format
+      a.download = `beneficiarios-${programName || programId}.${ext}`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)

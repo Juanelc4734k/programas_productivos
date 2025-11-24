@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
@@ -118,6 +119,7 @@ export default function AdminDashboardPage() {
   const [filterEstado, setFilterEstado] = useState<'all'|'activo'|'inactivo'>('all')
   const [userMenuOpenId, setUserMenuOpenId] = useState<string | null>(null)
   const [programs, setPrograms] = useState<any[]>([])
+  const [adminActiveTab, setAdminActiveTab] = useState<string>('users')
   const [programsError, setProgramsError] = useState<string | null>(null)
   const [programsLoading, setProgramsLoading] = useState(false)
   const [programDialogOpen, setProgramDialogOpen] = useState(false)
@@ -133,6 +135,16 @@ export default function AdminDashboardPage() {
   const [reportPreview, setReportPreview] = useState<any | null>(null)
   const [reportError, setReportError] = useState<string | null>(null)
   const [selectedProgramId, setSelectedProgramId] = useState<string>('')
+  const [settingsSavedMsg, setSettingsSavedMsg] = useState<string | null>(null)
+  const [notifEmail, setNotifEmail] = useState(true)
+  const [notifInApp, setNotifInApp] = useState(true)
+  const [notifSMS, setNotifSMS] = useState(false)
+  const [tema, setTema] = useState<'system' | 'light' | 'dark'>('system')
+  const [idioma, setIdioma] = useState<'es' | 'en'>('es')
+  const [logs, setLogs] = useState<{ _id: string; type: string; message: string; time: string }[]>([])
+  const [logsLoading, setLogsLoading] = useState(false)
+  const [logsError, setLogsError] = useState<string | null>(null)
+  const [logsSearch, setLogsSearch] = useState('')
   useEffect(() => {
     (async () => {
       try {
@@ -153,6 +165,44 @@ export default function AdminDashboardPage() {
       }
     })()
   }, [])
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem('admin_settings')
+      if (s) {
+        const obj = JSON.parse(s)
+        setNotifEmail(!!obj.notifEmail)
+        setNotifInApp(!!obj.notifInApp)
+        setNotifSMS(!!obj.notifSMS)
+        setTema(obj.tema || 'system')
+        setIdioma(obj.idioma || 'es')
+      }
+    } catch {}
+  }, [])
+  const saveSettings = () => {
+    try {
+      const obj = { notifEmail, notifInApp, notifSMS, tema, idioma }
+      localStorage.setItem('admin_settings', JSON.stringify(obj))
+      setSettingsSavedMsg('Configuración guardada')
+      setTimeout(() => setSettingsSavedMsg(null), 3000)
+    } catch (e: any) {
+      setSettingsSavedMsg(e?.message || 'Error al guardar configuración')
+      setTimeout(() => setSettingsSavedMsg(null), 4000)
+    }
+  }
+  const loadLogs = async () => {
+    try {
+      setLogsLoading(true)
+      setLogsError(null)
+      const { activitiesService } = await import('@/services/activities.service')
+      const list = await activitiesService.list(50)
+      setLogs(list)
+    } catch (err: any) {
+      setLogsError(err?.message || 'Error al cargar logs')
+    } finally {
+      setLogsLoading(false)
+    }
+  }
+  useEffect(() => { loadLogs() }, [])
   useEffect(() => {
     (async () => {
       try {
@@ -262,6 +312,15 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const handleProgramStatusChange = async (id: string, newStatus: 'activo'|'finalizado'|'en espera'|'cancelado') => {
+    try {
+      const updated = await updateProgram(id, { estado: newStatus } as any)
+      setPrograms((prev) => prev.map((p) => (p._id === id ? { ...p, estado: updated.estado } : p)))
+    } catch (err: any) {
+      setProgramsError(err?.message || 'Error al cambiar estado del programa')
+    }
+  }
+
   const previewSystemStats = async () => {
     try {
       const api = (await import('@/lib/api')).default
@@ -343,10 +402,20 @@ export default function AdminDashboardPage() {
       const { usersService } = await import('@/services/users.service')
       if (newUserType === 'campesino') {
         const created = await usersService.registerCampesino({ nombre: newUserForm.nombre, documento_identidad: newUserForm.documento_identidad, correo: newUserForm.correo, telefono: newUserForm.telefono, contrasena: newUserForm.contrasena, vereda: newUserForm.vereda })
-        setUsers((prev) => [created, ...prev])
+        try {
+          const fresh = await usersService.list()
+          setUsers(fresh)
+        } catch {
+          setUsers((prev) => [created, ...prev])
+        }
       } else {
         const created = await usersService.registerFuncionario({ nombre: newUserForm.nombre, documento_identidad: newUserForm.documento_identidad, correo: newUserForm.correo, telefono: newUserForm.telefono, contrasena: newUserForm.contrasena, dependencia: newUserForm.dependencia })
-        setUsers((prev) => [created, ...prev])
+        try {
+          const fresh = await usersService.list()
+          setUsers(fresh)
+        } catch {
+          setUsers((prev) => [created, ...prev])
+        }
       }
       setNewUserDialogOpen(false)
     } catch (err: any) {
@@ -387,6 +456,10 @@ export default function AdminDashboardPage() {
         return "bg-blue-100 text-blue-800 border-blue-200"
       case "suspended":
         return "bg-red-100 text-red-800 border-red-200"
+      case "activo":
+        return "bg-emerald-100 text-emerald-800 border-emerald-200"
+      case "inactivo":
+        return "bg-gray-100 text-gray-800 border-gray-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
@@ -408,7 +481,7 @@ export default function AdminDashboardPage() {
                   <Shield className="w-3 h-3 mr-1" />
                   Super Admin
                 </Badge>
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => setAdminActiveTab('settings')} aria-label="Ir a Configuración">
                   <Settings className="w-4 h-4 mr-2" />
                   Configuración
                 </Button>
@@ -431,10 +504,10 @@ export default function AdminDashboardPage() {
                 </CardContent>
               </Card>
             )}
-            {systemStats.map((stat, index) => {
+            {systemStats.map((stat) => {
               const IconComponent = stat.icon
               return (
-                <Card key={index} className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                <Card key={String(stat.title)} className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
@@ -475,8 +548,8 @@ export default function AdminDashboardPage() {
                     </CardContent>
                   </Card>
                 )}
-                {systemHealth.map((component, index) => (
-                  <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                {systemHealth.map((component) => (
+                  <div key={String(component.component)} className="p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-gray-900">{component.component}</h4>
                       <Badge className={getStatusColor(component.status)}>
@@ -504,7 +577,7 @@ export default function AdminDashboardPage() {
           </Card>
 
           {/* Contenido principal con tabs */}
-          <Tabs defaultValue="users" className="space-y-6">
+          <Tabs value={adminActiveTab} defaultValue="users" className="space-y-6" onValueChange={(v) => setAdminActiveTab(v)}>
             <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="users">Usuarios</TabsTrigger>
               <TabsTrigger value="programs">Programas</TabsTrigger>
@@ -556,7 +629,7 @@ export default function AdminDashboardPage() {
                     )}
                     {filteredUsers.map((user) => (
                       <div
-                        key={user._id}
+                        key={String(user._id || user.documento_identidad || user.correo || Math.random())}
                         className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
                       >
                         <div className="flex items-center justify-between">
@@ -574,7 +647,7 @@ export default function AdminDashboardPage() {
                                 <span className="text-xs text-gray-500">
                                   {getUserLocation(user)}
                                 </span>
-                                <span className="text-xs text-gray-500">Registrado: {new Date(user.fecha_registro).toLocaleDateString('es-CO')}</span>
+                                <span className="text-xs text-gray-500">Registrado: {new Date(user.fecha_registro || (user as any).createdAt || (user as any).updatedAt).toLocaleDateString('es-CO')}</span>
                               </div>
                             </div>
                           </div>
@@ -712,14 +785,27 @@ export default function AdminDashboardPage() {
                     )}
                     {programs.map((program) => (
                       <div key={program._id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
                           <div>
                             <h3 className="text-lg font-medium text-gray-900">{program.nombre}</h3>
                             <p className="text-sm text-gray-600">Categoría: {program.categoria}</p>
                           </div>
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                            {program.estado}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                              {program.estado}
+                            </Badge>
+                            <select
+                              className="border rounded p-2 text-sm"
+                              aria-label="Cambiar estado del programa"
+                              value={program.estado || 'activo'}
+                              onChange={(e) => handleProgramStatusChange(program._id, e.target.value as any)}
+                            >
+                              <option value="activo">Activo</option>
+                              <option value="finalizado">Finalizado</option>
+                              <option value="en espera">En espera</option>
+                              <option value="cancelado">Cancelado</option>
+                            </select>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -815,12 +901,12 @@ export default function AdminDashboardPage() {
               </DialogContent>
             </Dialog>
             <Dialog open={newProgramDialogOpen} onOpenChange={setNewProgramDialogOpen}>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
                   <DialogTitle>Nuevo Programa</DialogTitle>
                   <DialogDescription>Completa la información requerida</DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="text-sm text-gray-700">Nombre</label>
                     <input className="mt-1 w-full border rounded p-2" value={newProgramForm.nombre} onChange={(e) => setNewProgramForm({ ...newProgramForm, nombre: e.target.value })} />
@@ -829,7 +915,7 @@ export default function AdminDashboardPage() {
                     <label className="text-sm text-gray-700">Categoría</label>
                     <input className="mt-1 w-full border rounded p-2" value={newProgramForm.categoria} onChange={(e) => setNewProgramForm({ ...newProgramForm, categoria: e.target.value })} />
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="sm:col-span-2">
                     <label className="text-sm text-gray-700">Descripción</label>
                     <textarea className="mt-1 w-full border rounded p-2" value={newProgramForm.descripcion} onChange={(e) => setNewProgramForm({ ...newProgramForm, descripcion: e.target.value })} />
                   </div>
@@ -849,20 +935,20 @@ export default function AdminDashboardPage() {
                     <label className="text-sm text-gray-700">Presupuesto</label>
                     <input type="number" className="mt-1 w-full border rounded p-2" value={newProgramForm.presupuesto} onChange={(e) => setNewProgramForm({ ...newProgramForm, presupuesto: Number(e.target.value) })} />
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="sm:col-span-2">
                     <label className="text-sm text-gray-700">Beneficios (separados por coma)</label>
                     <input className="mt-1 w-full border rounded p-2" value={newProgramForm.beneficios} onChange={(e) => setNewProgramForm({ ...newProgramForm, beneficios: e.target.value })} />
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="sm:col-span-2">
                     <label className="text-sm text-gray-700">Requisitos (separados por coma)</label>
                     <input className="mt-1 w-full border rounded p-2" value={newProgramForm.requisitos} onChange={(e) => setNewProgramForm({ ...newProgramForm, requisitos: e.target.value })} />
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="sm:col-span-2">
                     <label className="text-sm text-gray-700">Ubicaciones (veredas, separadas por coma)</label>
                     <input className="mt-1 w-full border rounded p-2" value={newProgramForm.ubicaciones} onChange={(e) => setNewProgramForm({ ...newProgramForm, ubicaciones: e.target.value })} />
                   </div>
                 </div>
-                <div className="flex items-center justify-end space-x-2 mt-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mt-3">
                   <Button variant="outline" size="sm" onClick={() => setNewProgramDialogOpen(false)}>Cancelar</Button>
                   <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" onClick={saveNewProgram}>Crear</Button>
                 </div>
@@ -1107,10 +1193,46 @@ export default function AdminDashboardPage() {
                   <CardDescription>Ajustes generales de la plataforma</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-12">
-                    <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Panel de Configuración</h3>
-                    <p className="text-gray-600">Personaliza la plataforma según las necesidades</p>
+                  {settingsSavedMsg && (
+                    <div className="mb-4 p-3 border rounded bg-emerald-50 border-emerald-200 text-emerald-800 text-sm">{settingsSavedMsg}</div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 border rounded">
+                      <h4 className="font-medium text-gray-900 mb-2">Notificaciones</h4>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm text-gray-700">Correo Electrónico</span>
+                        <Switch checked={notifEmail} onCheckedChange={(v) => setNotifEmail(!!v)} aria-label="Notificaciones por correo" />
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm text-gray-700">En la Plataforma</span>
+                        <Switch checked={notifInApp} onCheckedChange={(v) => setNotifInApp(!!v)} aria-label="Notificaciones in-app" />
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm text-gray-700">SMS</span>
+                        <Switch checked={notifSMS} onCheckedChange={(v) => setNotifSMS(!!v)} aria-label="Notificaciones SMS" />
+                      </div>
+                    </div>
+                    <div className="p-4 border rounded">
+                      <h4 className="font-medium text-gray-900 mb-2">Preferencias</h4>
+                      <div>
+                        <label className="text-sm text-gray-700">Tema</label>
+                        <select className="mt-1 w-full border rounded p-2" value={tema} onChange={(e) => setTema(e.target.value as any)} aria-label="Tema">
+                          <option value="system">Sistema</option>
+                          <option value="light">Claro</option>
+                          <option value="dark">Oscuro</option>
+                        </select>
+                      </div>
+                      <div className="mt-3">
+                        <label className="text-sm text-gray-700">Idioma</label>
+                        <select className="mt-1 w-full border rounded p-2" value={idioma} onChange={(e) => setIdioma(e.target.value as any)} aria-label="Idioma">
+                          <option value="es">Español</option>
+                          <option value="en">English</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end mt-4">
+                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={saveSettings}>Guardar</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -1126,10 +1248,39 @@ export default function AdminDashboardPage() {
                   <CardDescription>Registro de actividades y eventos del sistema</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-12">
-                    <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Registro de Actividades</h3>
-                    <p className="text-gray-600">Monitorea todas las actividades del sistema</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <Input className="pl-10 w-64" placeholder="Buscar en logs..." value={logsSearch} onChange={(e) => setLogsSearch(e.target.value)} aria-label="Buscar logs" />
+                    </div>
+                    <Button size="sm" variant="outline" onClick={loadLogs}>Actualizar</Button>
+                  </div>
+                  {logsError && (
+                    <Card className="bg-white border border-red-200 mb-3">
+                      <CardContent className="p-3">
+                        <p className="text-sm text-red-800">{logsError}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {logsLoading && (
+                    <p className="text-sm text-gray-600">Cargando logs...</p>
+                  )}
+                  <div className="space-y-2">
+                    {logs.filter(l => {
+                      const q = logsSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return (l.type||'').toLowerCase().includes(q) || (l.message||'').toLowerCase().includes(q)
+                    }).map((l) => (
+                      <div key={l._id} className="flex items-start space-x-3 p-3 border rounded">
+                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-gray-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-900">{l.message}</p>
+                          <div className="text-xs text-gray-500">{l.type} • {new Date(l.time).toLocaleString('es-CO')}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>

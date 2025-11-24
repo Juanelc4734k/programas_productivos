@@ -40,15 +40,21 @@ export default function LoginPage() {
       if (activeTab === 'farmer') {
         await loginCampesino(credentials)
         toast.success('Inicio de sesión exitoso. Bienvenido!')
+        setTimeout(() => { window.location.href = '/user' }, 1500)
       } else {
         await loginFuncionario(credentials)
-        toast.success('Acceso autorizado. Bienvenido al panel administrativo!')
+        toast.success('Acceso autorizado. Bienvenido!')
+        // Determinar destino según rol en token
+        const token = localStorage.getItem('token')
+        let destino = '/funcionario'
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]))
+            destino = payload?.tipo_usuario === 'admin' ? '/admin' : '/funcionario'
+          } catch {}
+        }
+        setTimeout(() => { window.location.href = destino }, 1500)
       }
-
-      // Redirigir según el tipo de usuario
-      setTimeout(() => {
-        window.location.href = activeTab === 'farmer' ? '/user' : '/funcionario'
-      }, 1500)
     } catch (error: any) {
       console.error('Error de login:', error)
       

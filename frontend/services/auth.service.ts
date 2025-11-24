@@ -72,6 +72,18 @@ export const authService = {
     }
   },
 
+  async loginAdmin(credentials: { correo?: string; documento_identidad?: string; contrasena: string }) {
+    try {
+      const response = await api.post('/auth/login/admin', credentials)
+      const { token, user } = response.data
+      localStorage.setItem('token', token)
+      document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}`
+      return user
+    } catch (error: any) {
+      throw error
+    }
+  },
+
   async getCurrentUser() {
     try {
       const response = await api.get(API_ENDPOINTS.auth.me || '/auth/me')

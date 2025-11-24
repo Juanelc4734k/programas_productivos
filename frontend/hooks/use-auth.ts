@@ -81,9 +81,21 @@ export function useAuth() {
       const userData = await authService.loginFuncionario(credentials)
       setUser(userData)
       return userData
-    } catch (err) {
-      setError(err as null)
-      throw err
+    } catch (err: any) {
+      const msg = (err?.message || '').toLowerCase()
+      const shouldTryAdmin = msg.includes('no es un funcionario')
+      if (!shouldTryAdmin) {
+        setError(err as null)
+        throw err
+      }
+      try {
+        const userData = await authService.loginAdmin(credentials)
+        setUser(userData)
+        return userData
+      } catch (err2) {
+        setError(err2 as null)
+        throw err2
+      }
     }
   }
 
