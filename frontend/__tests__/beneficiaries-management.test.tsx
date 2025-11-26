@@ -58,5 +58,18 @@ describe('BeneficiariesManagement search behavior', () => {
     vi.advanceTimersByTime(500)
     expect(service.beneficiariesService.getBeneficiariesByProgram).toHaveBeenCalledTimes(2)
   }, { timeout: 20000 })
+  
+  it('sets a meaningful filename when exporting', async () => {
+    const blob = new Blob([new Uint8Array([1,2,3])], { type: 'application/pdf' })
+    vi.spyOn(service.beneficiariesService, 'exportBeneficiaries').mockResolvedValue(blob)
+    const createSpy = vi.spyOn(document, 'createElement')
+    render(<BeneficiariesManagement programId={programId} programName={'Café Sostenible'} />)
+    const select = screen.getByText('Exportar')
+    fireEvent.click(select)
+    const option = await screen.findByText('pdf')
+    fireEvent.click(option)
+    const anchor = createSpy.mock.results.find(r => r.value?.tagName === 'A')?.value as HTMLAnchorElement
+    expect(anchor.download).toMatch(/beneficiarios-cafe-sostenible-\d{4}-\d{2}-\d{2}\.pdf/)
+  })
 })
 import React from 'react'

@@ -63,7 +63,13 @@ export const exportReport = async (req, res) => {
 
     if (format === 'pdf') {
       try {
-        const html = `<!doctype html><html><head><meta charset="utf-8"><title>Reporte</title><style>body{font-family:sans-serif}h1{font-size:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #333;padding:6px;text-align:left}</style></head><body><h1>Reporte ${type}</h1><table><tr><th>Beneficiarios asignados</th><th>Programas activos</th><th>Trámites pendientes</th><th>Desde</th><th>Hasta</th></tr><tr><td>${dataResponse.beneficiariesAssigned}</td><td>${dataResponse.activePrograms}</td><td>${dataResponse.pendingProcedures}</td><td>${dataResponse.dateRange.from || ''}</td><td>${dataResponse.dateRange.to || ''}</td></tr></table></body></html>`
+        const buildOverviewPdfHtml = (payload) => {
+          const titulo = `Reporte ${type}`
+          const desde = payload.dateRange.from || ''
+          const hasta = payload.dateRange.to || ''
+          return `<!doctype html><html><head><meta charset="utf-8"><meta name="author" content="Plataforma Montebello"><meta name="title" content="${titulo}"><title>${titulo}</title><style>body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:24px}h1{font-size:18px;margin:0 0 12px}p.meta{font-size:12px;color:#555;margin:4px 0}table{border-collapse:collapse;width:100%}thead th{background:#f3f4f6;color:#111;border:1px solid #e5e7eb;padding:8px;font-size:12px;text-align:left}tbody td{border:1px solid #e5e7eb;padding:8px;font-size:12px}section.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}section.grid .card{border:1px solid #e5e7eb;padding:10px;border-radius:6px;background:#fafafa}section.grid .card .label{font-size:11px;color:#374151}section.grid .card .value{font-size:16px;color:#111;font-weight:600}</style></head><body><h1>${titulo}</h1><p class="meta">Periodo: ${desde} — ${hasta}</p><section class="grid"><div class="card"><div class="label">Beneficiarios asignados</div><div class="value">${payload.beneficiariesAssigned}</div></div><div class="card"><div class="label">Programas activos</div><div class="value">${payload.activePrograms}</div></div><div class="card"><div class="label">Trámites pendientes</div><div class="value">${payload.pendingProcedures}</div></div></section><table><thead><tr><th>Indicador</th><th>Valor</th></tr></thead><tbody><tr><td>Beneficiarios asignados</td><td>${payload.beneficiariesAssigned}</td></tr><tr><td>Programas activos</td><td>${payload.activePrograms}</td></tr><tr><td>Trámites pendientes</td><td>${payload.pendingProcedures}</td></tr><tr><td>Desde</td><td>${desde}</td></tr><tr><td>Hasta</td><td>${hasta}</td></tr></tbody></table></body></html>`
+        }
+        const html = buildOverviewPdfHtml(dataResponse)
         const puppeteer = await import('puppeteer')
 
         const commonWindowsPaths = [
@@ -94,11 +100,12 @@ export const exportReport = async (req, res) => {
         }
         const page = await browser.newPage()
         await page.setContent(html, { waitUntil: 'networkidle0' })
-        const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true })
+        const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '15mm', right: '12mm', bottom: '15mm', left: '12mm' } })
         await browser.close()
         res.setHeader('Content-Type', 'application/pdf')
         res.setHeader('Content-Length', String(pdfBuffer.length))
-        res.setHeader('Content-Disposition', `attachment; filename="reporte-${type}.pdf"`)
+        const fileName = `reporte-${type}-${new Date().toISOString().slice(0,10)}.pdf`
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
         return res.status(200).send(pdfBuffer)
       } catch (e) {
         return res.status(500).json({ message: 'Error generando PDF', error: e.message })

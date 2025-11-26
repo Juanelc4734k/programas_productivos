@@ -329,11 +329,11 @@ export const exportBeneficiarios = async (req, res) => {
                 }
                 const page = await browser.newPage();
                 await page.setContent(html, { waitUntil: 'networkidle0' });
-                const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '20mm', right: '12mm', bottom: '20mm', left: '12mm' } });
+                const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '15mm', right: '12mm', bottom: '15mm', left: '12mm' } });
                 await browser.close();
                 res.setHeader('Content-Type', 'application/pdf');
                 res.setHeader('Content-Length', String(pdfBuffer.length));
-                res.setHeader('Content-Disposition', `attachment; filename=\"beneficiarios-${id}.pdf\"`);
+                res.setHeader('Content-Disposition', `attachment; filename="beneficiarios-${id}-${new Date().toISOString().slice(0,10)}.pdf"`);
                 return res.status(200).send(pdfBuffer);
             } catch (err) {
                 console.error('Error generating PDF for beneficiarios:', err);

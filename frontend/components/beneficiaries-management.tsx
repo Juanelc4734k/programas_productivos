@@ -154,7 +154,9 @@ export default function BeneficiariesManagement({ programId, programName }: Bene
       const a = document.createElement('a')
       a.href = url
       const ext = format === 'excel' ? 'xls' : format
-      a.download = `beneficiarios-${programName || programId}.${ext}`
+      const date = new Date().toISOString().slice(0,10)
+      const base = (programName || programId || 'programa').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      a.download = `beneficiarios-${base}-${date}.${ext}`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)

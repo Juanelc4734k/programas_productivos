@@ -329,7 +329,8 @@ export default function FuncionarioPage() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `reporte-${reportType}.${format}`
+      const date = new Date().toISOString().slice(0,10)
+      a.download = `reporte-${reportType}-${date}.${format}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
